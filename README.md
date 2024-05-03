@@ -72,12 +72,12 @@ st.set_page_config(layout = "wide")
 st.title("EXTRACTING BIZCARD WITH OCR")
 st.image("/content/project.webp")
 
-with st.sidebar:
+#with st.sidebar:
 
-  select=option_menu("Menu",["About the project","Upload and Modifying", "Delete"])
+select=option_menu("Menu",["About the project","Extracting data","Modify data","Delete data"],orientation="horizontal")
 
 
-if select == "About the project":
+if select=="About the project":
   st.markdown("#### Project description")
   st.write("It have been tasked with developing a Streamlit application that allows users to upload an image of a business card and extract relevant information from it using easyOCR. The extracted information should include the company name, card holder name, designation, mobile number, email address, website URL, area, city, state, and pin code. The extracted information should then be displayed in the application's graphical user interface (GUI).")
   st.markdown("#### Skills Required:")
@@ -104,7 +104,7 @@ if select == "About the project":
       st.image("/content/imgtotxt.png")
 
 
-elif select == "Upload and Modifying":
+elif select=="Extracting data":
   img = st.file_uploader("Upload the Image", type=["png","jpg","jpeg"])
 
   if img is not None:
@@ -158,24 +158,34 @@ elif select == "Upload and Modifying":
       cursor.execute(create_table_query)
       mydb.commit()
 
-      #Inset Query
+      select_query = '''SELECT * FROM bizcard_details WHERE name=? AND designation=?'''
+      existing_data = cursor.execute(select_query, (text_dict["Name"][0], text_dict["DESIGNATION"][0])).fetchone()
 
-      insert_query = '''INSERT INTO bizcard_details(name, designation, company_name, contact, email, website, address, pincode, image)
+      if existing_data:
+        st.warning("Data already exists in the database.")
+      else:
 
-                                                      values(?,?,?,?,?,?,?,?,?)'''
+        #Inset Query
+
+        insert_query = '''INSERT INTO bizcard_details(name, designation, company_name, contact, email, website, address, pincode, image)
+
+                                                        values(?,?,?,?,?,?,?,?,?)'''
 
 
-      datas = concat_df.values.tolist()[0]
-      cursor.execute(insert_query,datas)
-      mydb.commit()
-      
-      st.success("Saved successfully")
-  method = st.radio("select the method",["none","preview","modify"])
+        datas = concat_df.values.tolist()[0]
+        cursor.execute(insert_query,datas)
+        mydb.commit()
 
-  if method == "none":
-    st.write("")
+        st.success("Saved successfully")
 
-  if method == "preview":
+
+
+  select = option_menu("select the method",["View Extracted data"])
+
+  #if method == "none":
+    #st.write("")
+
+  if select == "View Extracted data":
 
     mydb = sqlite3.connect("Bizcardx.db")
     cursor = mydb.cursor()
@@ -189,7 +199,10 @@ elif select == "Upload and Modifying":
     table_df = pd.DataFrame(table, columns=("Name", "DESIGNATION", "COMPANY_NAME", "CONTACT", "EMAIL", "WEBSITE","ADDRESS", "PINCODE", "IMAGE"))
     st.dataframe(table_df)
 
-  elif method == "modify":
+
+elif select=="Modify data":
+  select = option_menu("select the method",["Modify"])
+  if select == "Modify":
 
     mydb = sqlite3.connect("Bizcardx.db")
     cursor = mydb.cursor()
@@ -261,11 +274,11 @@ elif select == "Upload and Modifying":
 
       st.success("Modified successfully")
 
-elif select == "Delete":
+elif select=="Delete data":
   mydb = sqlite3.connect("Bizcardx.db")
   cursor = mydb.cursor()
- 
- 
+
+
   col1,col2 = st.columns(2)
   with col1:
     select_query="SELECT Name FROM bizcard_details"
@@ -299,6 +312,8 @@ elif select == "Delete":
   if remove:
 
     cursor.execute(f"DELETE FROM bizcard_details WHERE Name = '{name_select}' AND DESIGNATION = '{designation_select}'")
-    mydb.commit()   
+    mydb.commit()
 
-    st.success("Deleted succesfully")  
+    st.success("Deleted succesfully")
+
+
